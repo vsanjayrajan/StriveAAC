@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>StriveCCS</title>
+<meta name="theme-color" content="#2E3B55">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="StriveCCS">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="icons/icon-192.png">
+<style>
+  :root{
+    --pronoun:#FFF176; --verb:#81C784; --descriptor:#64B5F6; --noun:#FFB74D;
+    --preposition:#BA68C8; --social:#F48FB1; --negation:#E57373; --misc:#E0E0E0;
+    --bg:#F5F6FA; --ink:#222;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;background:var(--bg);font-family:'Segoe UI',Arial,sans-serif;color:var(--ink);
+    -webkit-tap-highlight-color: transparent; overscroll-behavior:none;}
+  #app{display:flex;flex-direction:column;height:100vh;}
+
+  #topbar{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#2E3B55;color:#fff;flex-wrap:wrap;}
+  #topbar select, #topbar button{font-size:16px;padding:8px 10px;border-radius:8px;border:none;cursor:pointer;}
+  #topbar select{background:#fff;color:#222;}
+  #topbar button{background:#4C5F82;color:#fff;}
+  #topbar button.active{background:#F4B400;color:#222;}
+  #topbar .spacer{flex:1;}
+  #studentLabel{font-weight:600;font-size:15px;white-space:nowrap;}
+
+  #sentenceBar{display:flex;align-items:center;gap:8px;padding:10px;background:#fff;border-bottom:2px solid #ddd;min-height:64px;}
+  #sentenceStrip{flex:1;display:flex;gap:6px;overflow-x:auto;padding:4px;min-height:48px;align-items:center;}
+  #sentenceStrip .word{background:#eee;border-radius:8px;padding:8px 12px;font-size:20px;font-weight:600;white-space:nowrap;cursor:pointer;border:2px solid rgba(0,0,0,0.1);}
+  #sentenceStrip .placeholder{color:#999;font-size:16px;font-style:italic;}
+  #sentenceBar button{font-size:15px;padding:10px 14px;border-radius:8px;border:none;cursor:pointer;font-weight:700;white-space:nowrap;}
+  #speakBtn{background:#2E7D32;color:#fff;}
+  #clearBtn{background:#C62828;color:#fff;}
+  #backspaceBtn{background:#616161;color:#fff;}
+
+  #tabs{display:flex;gap:6px;padding:8px 10px;background:#fff;overflow-x:auto;border-bottom:1px solid #ddd;}
+  #tabs button{flex-shrink:0;padding:9px 16px;border-radius:20px;border:2px solid #ccc;background:#fafafa;font-size:15px;font-weight:600;cursor:pointer;color:#333;}
+  #tabs button.active{background:#2E3B55;color:#fff;border-color:#2E3B55;}
+
+  #gridWrap{flex:1;overflow-y:auto;padding:10px;}
+  #grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;}
+  .tile{border-radius:14px;padding:10px 6px;min-height:88px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;border:2px solid rgba(0,0,0,0.15);box-shadow:0 2px 3px rgba(0,0,0,0.08);user-select:none;position:relative;}
+  .tile:active{transform:scale(0.95);}
+  .tile .emoji{font-size:32px;line-height:1;}
+  .tile .label{font-size:15px;font-weight:700;margin-top:4px;text-align:center;color:#222;}
+  .tile.removeMode::after{content:"✕";position:absolute;top:2px;right:6px;color:#C62828;font-weight:900;font-size:16px;}
+
+  #legend{display:flex;flex-wrap:wrap;gap:8px;padding:6px 10px;font-size:12px;background:#fff;border-top:1px solid #eee;}
+  #legend span{display:flex;align-items:center;gap:4px;}
+  #legend i{width:14px;height:14px;border-radius:3px;display:inline-block;border:1px solid rgba(0,0,0,0.2);}
+
+  #modalOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;z-index:50;}
+  #modalOverlay.show{display:flex;}
+  #modalBox{background:#fff;border-radius:14px;padding:20px;width:min(90vw,380px);max-height:85vh;overflow-y:auto;}
+  #modalBox h3{margin-top:0;}
+  #modalBox label{display:block;margin:10px 0 4px;font-size:14px;font-weight:600;}
+  #modalBox input, #modalBox select{width:100%;padding:9px;font-size:16px;border-radius:8px;border:1px solid #ccc;}
+  #modalBox .modalBtns{display:flex;gap:8px;margin-top:16px;}
+  #modalBox .modalBtns button{flex:1;padding:10px;border-radius:8px;border:none;font-weight:700;cursor:pointer;font-size:15px;}
+  .btnPrimary{background:#2E7D32;color:#fff;}
+  .btnSecondary{background:#eee;color:#333;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="topbar">
+    <span id="appTitle" style="font-weight:800;font-size:17px;letter-spacing:0.5px;">StriveCCS</span>
+    <span id="studentLabel">Student: —</span>
+    <select id="studentSelect"></select>
+    <button id="newStudentBtn">+ Student</button>
+    <div class="spacer"></div>
+    <button id="editModeBtn">✎ Edit board</button>
+    <button id="removeModeBtn">🗑 Remove</button>
+  </div>
+
+  <div id="sentenceBar">
+    <div id="sentenceStrip"><span class="placeholder">Tap words to build a sentence...</span></div>
+    <button id="backspaceBtn">⌫</button>
+    <button id="clearBtn">Clear</button>
+    <button id="speakBtn">▶ Speak</button>
+  </div>
+
+  <div id="tabs"></div>
+  <div id="gridWrap"><div id="grid"></div></div>
+
+  <div id="legend">
+    <span><i style="background:var(--social)"></i>Social</span>
+    <span><i style="background:var(--pronoun)"></i>Pronouns</span>
+    <span><i style="background:var(--verb)"></i>Verbs</span>
+    <span><i style="background:var(--descriptor)"></i>Descriptors</span>
+    <span><i style="background:var(--noun)"></i>Nouns</span>
+    <span><i style="background:var(--preposition)"></i>Prepositions</span>
+    <span><i style="background:var(--negation)"></i>Negation</span>
+  </div>
+</div>
+
+<div id="modalOverlay"><div id="modalBox"></div></div>
+
+<script>
+(function(){
+
+const CORE_TABS = {
+  "Core": [
+    ["I","🧑",'pronoun'], ["you","🫵",'pronoun'], ["want","🙋",'verb'], ["like","👍",'verb'],
+    ["more","➕",'verb'], ["go","🚶",'verb'], ["stop","✋",'negation'], ["all done","✅",'negation'],
+    ["help","🆘",'verb'], ["look","👀",'verb'], ["give","🤲",'verb'], ["come","👋",'verb'],
+    ["yes","✔️",'social'], ["no","❌",'negation'], ["please","🙏",'social'], ["thank you","🙌",'social']
+  ],
+  "Feelings": [
+    ["happy","😄",'descriptor'], ["sad","😢",'descriptor'], ["angry","😠",'descriptor'],
+    ["scared","😨",'descriptor'], ["tired","😴",'descriptor'], ["hurt","🤕",'descriptor'],
+    ["excited","🤩",'descriptor'], ["calm","😌",'descriptor'], ["sick","🤒",'descriptor'],
+    ["frustrated","😤",'descriptor']
+  ],
+  "Food & Drink": [
+    ["eat","🍽️",'verb'], ["drink","🥤",'verb'], ["water","💧",'noun'], ["snack","🍪",'noun'],
+    ["lunch","🍱",'noun'], ["fruit","🍎",'noun'], ["milk","🥛",'noun'], ["hungry","🍔",'descriptor'],
+    ["thirsty","🥤",'descriptor'], ["finished","🍽️",'negation']
+  ],
+  "Actions": [
+    ["play","🧩",'verb'], ["open","📂",'verb'], ["close","🚪",'verb'], ["sit","🪑",'verb'],
+    ["stand","🧍",'verb'], ["wash","🧼",'verb'], ["read","📖",'verb'], ["write","✏️",'verb'],
+    ["listen","👂",'verb'], ["wait","⏳",'verb']
+  ],
+  "People & Places": [
+    ["mom","👩",'noun'], ["dad","👨",'noun'], ["teacher","🧑‍🏫",'noun'], ["friend","🧑‍🤝‍🧑",'noun'],
+    ["home","🏠",'noun'], ["school","🏫",'noun'], ["bathroom","🚻",'noun'], ["playground","🛝",'noun'],
+    ["classroom","🏫",'noun'], ["outside","🌳",'preposition']
+  ],
+  "Descriptors": [
+    ["big","🐘",'descriptor'], ["little","🐜",'descriptor'], ["hot","🔥",'descriptor'],
+    ["cold","❄️",'descriptor'], ["loud","🔊",'descriptor'], ["quiet","🤫",'descriptor'],
+    ["fast","⚡",'descriptor'], ["slow","🐢",'descriptor'], ["good","👍",'descriptor'], ["bad","👎",'descriptor']
+  ],
+  "Prepositions": [
+    ["in","📥",'preposition'], ["out","📤",'preposition'], ["on","⬆️",'preposition'],
+    ["off","⬇️",'preposition'], ["here","📍",'preposition'], ["there","👉",'preposition'],
+    ["up","🔼",'preposition'], ["down","🔽",'preposition']
+  ],
+  "Custom": []
+};
+const POS_COLOR = {
+  pronoun:'var(--pronoun)', verb:'var(--verb)', descriptor:'var(--descriptor)',
+  noun:'var(--noun)', preposition:'var(--preposition)', social:'var(--social)', negation:'var(--negation)'
+};
+
+let currentStudent = null;
+let currentTab = "Core";
+let customWords = {};
+let editMode = false;
+let removeMode = false;
+let sentence = [];
+
+const el = id => document.getElementById(id);
+
+// ---------- Storage: localStorage, per this device only ----------
+function loadStudents(){
+  try{ return JSON.parse(localStorage.getItem('aac-students-list') || '[]'); }catch(e){ return []; }
+}
+function saveStudents(list){
+  localStorage.setItem('aac-students-list', JSON.stringify(list));
+}
+function loadCustomWords(studentId){
+  try{ return JSON.parse(localStorage.getItem('aac-custom-'+studentId) || '{}'); }catch(e){ return {}; }
+}
+function saveCustomWords(studentId, data){
+  localStorage.setItem('aac-custom-'+studentId, JSON.stringify(data));
+}
+
+function speak(text){
+  try{
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 0.9;
+    window.speechSynthesis.speak(u);
+  }catch(e){ console.error('Speech error', e); }
+}
+
+function renderTabs(){
+  const tabsEl = el('tabs');
+  tabsEl.innerHTML = '';
+  Object.keys(CORE_TABS).forEach(tab=>{
+    const b = document.createElement('button');
+    b.textContent = tab;
+    if(tab===currentTab) b.classList.add('active');
+    b.onclick = ()=>{ currentTab = tab; renderTabs(); renderGrid(); };
+    tabsEl.appendChild(b);
+  });
+}
+
+function renderGrid(){
+  const grid = el('grid');
+  grid.innerHTML = '';
+  const builtIn = CORE_TABS[currentTab] || [];
+  const custom = (customWords[currentTab] || []);
+  const words = builtIn.concat(custom.map(w=>[...w, true]));
+
+  words.forEach((w)=>{
+    const [label, emoji, pos, isCustom] = w;
+    const tile = document.createElement('div');
+    tile.className = 'tile' + (removeMode && isCustom ? ' removeMode' : '');
+    tile.style.background = POS_COLOR[pos] || 'var(--misc)';
+    tile.innerHTML = `<div class="emoji">${emoji}</div><div class="label">${label}</div>`;
+    tile.onclick = ()=>{
+      if(removeMode && isCustom){
+        customWords[currentTab] = customWords[currentTab].filter(cw=>cw[0]!==label);
+        saveCustomWords(currentStudent, customWords);
+        renderGrid();
+        return;
+      }
+      speak(label);
+      sentence.push(label);
+      renderSentence();
+    };
+    grid.appendChild(tile);
+  });
+
+  if(editMode){
+    const addTile = document.createElement('div');
+    addTile.className = 'tile';
+    addTile.style.background = '#fff';
+    addTile.style.border = '2px dashed #999';
+    addTile.innerHTML = `<div class="emoji">➕</div><div class="label">Add word</div>`;
+    addTile.onclick = openAddWordModal;
+    grid.appendChild(addTile);
+  }
+}
+
+function renderSentence(){
+  const strip = el('sentenceStrip');
+  strip.innerHTML = '';
+  if(sentence.length===0){
+    strip.innerHTML = '<span class="placeholder">Tap words to build a sentence...</span>';
+    return;
+  }
+  sentence.forEach((word, i)=>{
+    const s = document.createElement('span');
+    s.className = 'word';
+    s.textContent = word;
+    s.onclick = ()=>{ sentence.splice(i,1); renderSentence(); };
+    strip.appendChild(s);
+  });
+}
+
+function closeModal(){ el('modalOverlay').classList.remove('show'); }
+
+function openAddWordModal(){
+  const box = el('modalBox');
+  box.innerHTML = `
+    <h3>Add word to "${currentTab}"</h3>
+    <label>Word / phrase</label>
+    <input id="newWordLabel" type="text" placeholder="e.g. iPad">
+    <label>Emoji or short icon text</label>
+    <input id="newWordEmoji" type="text" placeholder="e.g. 📱" maxlength="4">
+    <label>Word type (for color coding)</label>
+    <select id="newWordPos">
+      <option value="noun">Noun (orange)</option>
+      <option value="verb">Verb (green)</option>
+      <option value="descriptor">Descriptor (blue)</option>
+      <option value="pronoun">Pronoun (yellow)</option>
+      <option value="preposition">Preposition (purple)</option>
+      <option value="social">Social (pink)</option>
+      <option value="negation">Negation (red)</option>
+    </select>
+    <div class="modalBtns">
+      <button class="btnSecondary" id="cancelAdd">Cancel</button>
+      <button class="btnPrimary" id="confirmAdd">Add</button>
+    </div>
+  `;
+  el('modalOverlay').classList.add('show');
+  el('cancelAdd').onclick = closeModal;
+  el('confirmAdd').onclick = ()=>{
+    const label = el('newWordLabel').value.trim();
+    const emoji = el('newWordEmoji').value.trim() || '💬';
+    const pos = el('newWordPos').value;
+    if(!label) return;
+    if(!customWords[currentTab]) customWords[currentTab] = [];
+    customWords[currentTab].push([label, emoji, pos]);
+    saveCustomWords(currentStudent, customWords);
+    closeModal();
+    renderGrid();
+  };
+}
+
+function openNewStudentModal(){
+  const box = el('modalBox');
+  box.innerHTML = `
+    <h3>Add a student board</h3>
+    <label>Student name</label>
+    <input id="newStudentName" type="text" placeholder="e.g. Alex">
+    <p style="font-size:12px;color:#666;margin-top:10px;">
+      This board is saved on this device only. To use the same custom words on another tablet, add them there separately, or use Export/Import (see the ⚙ menu in the future if added).
+    </p>
+    <div class="modalBtns">
+      <button class="btnSecondary" id="cancelStudent">Cancel</button>
+      <button class="btnPrimary" id="confirmStudent">Add</button>
+    </div>
+  `;
+  el('modalOverlay').classList.add('show');
+  el('cancelStudent').onclick = closeModal;
+  el('confirmStudent').onclick = ()=>{
+    const name = el('newStudentName').value.trim();
+    if(!name) return;
+    const students = loadStudents();
+    if(!students.includes(name)){
+      students.push(name);
+      saveStudents(students);
+    }
+    closeModal();
+    populateStudentSelect(name);
+  };
+}
+
+function populateStudentSelect(selectId){
+  const students = loadStudents();
+  const sel = el('studentSelect');
+  sel.innerHTML = '';
+  if(students.length===0){
+    const opt = document.createElement('option');
+    opt.textContent = 'No students yet — tap + Student';
+    opt.value = '';
+    sel.appendChild(opt);
+    el('studentLabel').textContent = 'Student: —';
+    currentStudent = null;
+    customWords = {};
+    renderGrid();
+    return;
+  }
+  students.forEach(s=>{
+    const opt = document.createElement('option');
+    opt.value = s; opt.textContent = s;
+    sel.appendChild(opt);
+  });
+  const chosen = selectId && students.includes(selectId) ? selectId : students[0];
+  sel.value = chosen;
+  switchStudent(chosen);
+}
+
+function switchStudent(name){
+  currentStudent = name;
+  el('studentLabel').textContent = 'Student: ' + name;
+  customWords = loadCustomWords(name);
+  sentence = [];
+  renderSentence();
+  renderGrid();
+}
+
+function init(){
+  renderTabs();
+  renderGrid();
+  renderSentence();
+  populateStudentSelect();
+
+  el('studentSelect').onchange = e => switchStudent(e.target.value);
+  el('newStudentBtn').onclick = openNewStudentModal;
+  el('speakBtn').onclick = ()=>{ if(sentence.length) speak(sentence.join(' ')); };
+  el('clearBtn').onclick = ()=>{ sentence = []; renderSentence(); };
+  el('backspaceBtn').onclick = ()=>{ sentence.pop(); renderSentence(); };
+  el('editModeBtn').onclick = ()=>{
+    editMode = !editMode; removeMode = false;
+    el('editModeBtn').classList.toggle('active', editMode);
+    el('removeModeBtn').classList.remove('active');
+    renderGrid();
+  };
+  el('removeModeBtn').onclick = ()=>{
+    removeMode = !removeMode; editMode = false;
+    el('removeModeBtn').classList.toggle('active', removeMode);
+    el('editModeBtn').classList.remove('active');
+    renderGrid();
+  };
+  el('modalOverlay').onclick = (e)=>{ if(e.target.id==='modalOverlay') closeModal(); };
+
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  }
+}
+
+init();
+})();
+</script>
+</body>
+</html>
