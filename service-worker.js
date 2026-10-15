@@ -26,4 +26,18 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((cached) => cached || fetch(event.request))
   );
+  el('confirmAdd').onclick = ()=>{
+  const label = el('newWordLabel').value.trim();
+  const emoji = el('newWordEmoji').value.trim() || '💬';
+  const pos = el('newWordPos').value;
+  if(!label || !currentStudent) return;
+  if(!customWords[currentTab]) customWords[currentTab] = [];
+  const exists = customWords[currentTab].some(w=>w[0].toLowerCase()===label.toLowerCase());
+  if(exists){ alert('That word is already on this tab.'); return; }
+  customWords[currentTab].push([label, emoji, pos]);
+  if(saveCustomWords(currentStudent, customWords)){
+    closeModal();
+    renderGrid();
+  }
+};
 });
