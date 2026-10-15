@@ -50,7 +50,7 @@
   .tile:active{transform:scale(0.95);}
   .tile .emoji{font-size:32px;line-height:1;}
   .tile .label{font-size:15px;font-weight:700;margin-top:4px;text-align:center;color:#222;}
-  .tile.removeMode::after{content:"âœ•";position:absolute;top:2px;right:6px;color:#C62828;font-weight:900;font-size:16px;}
+  .tile.removeMode::after{content:"✕";position:absolute;top:2px;right:6px;color:#C62828;font-weight:900;font-size:16px;}
 
   #legend{display:flex;flex-wrap:wrap;gap:8px;padding:6px 10px;font-size:12px;background:#fff;border-top:1px solid #eee;}
   #legend span{display:flex;align-items:center;gap:4px;}
@@ -73,19 +73,20 @@
 
   <div id="topbar">
     <span id="appTitle" style="font-weight:800;font-size:17px;letter-spacing:0.5px;">StriveCCS</span>
-    <span id="studentLabel">Student: â€”</span>
+    <span id="studentLabel">Student: —</span>
     <select id="studentSelect"></select>
     <button id="newStudentBtn">+ Student</button>
     <div class="spacer"></div>
-    <button id="editModeBtn">âœŽ Edit board</button>
-    <button id="removeModeBtn">ðŸ—‘ Remove</button>
+    <button id="editModeBtn">✎ Edit board</button>
+    <button id="removeModeBtn">🗑 Remove</button>
+    <button id="backupBtn">💾 Backup</button>
   </div>
 
   <div id="sentenceBar">
     <div id="sentenceStrip"><span class="placeholder">Tap words to build a sentence...</span></div>
-    <button id="backspaceBtn">âŒ«</button>
+    <button id="backspaceBtn">⌫</button>
     <button id="clearBtn">Clear</button>
-    <button id="speakBtn">â–¶ Speak</button>
+    <button id="speakBtn">▶ Speak</button>
   </div>
 
   <div id="tabs"></div>
@@ -109,42 +110,49 @@
 
 const CORE_TABS = {
   "Core": [
-    ["I","ðŸ§‘",'pronoun'], ["you","ðŸ«µ",'pronoun'], ["want","ðŸ™‹",'verb'], ["like","ðŸ‘",'verb'],
-    ["more","âž•",'verb'], ["go","ðŸš¶",'verb'], ["stop","âœ‹",'negation'], ["all done","âœ…",'negation'],
-    ["help","ðŸ†˜",'verb'], ["look","ðŸ‘€",'verb'], ["give","ðŸ¤²",'verb'], ["come","ðŸ‘‹",'verb'],
-    ["yes","âœ”ï¸",'social'], ["no","âŒ",'negation'], ["please","ðŸ™",'social'], ["thank you","ðŸ™Œ",'social']
+    ["I","🧑",'pronoun'], ["you","🫵",'pronoun'], ["want","🙋",'verb'], ["like","👍",'verb'],
+    ["more","➕",'verb'], ["go","🚶",'verb'], ["stop","✋",'negation'], ["all done","✅",'negation'],
+    ["help","🆘",'verb'], ["look","👀",'verb'], ["give","🤲",'verb'], ["come","👋",'verb'],
+    ["yes","✔️",'social'], ["no","❌",'negation'], ["please","🙏",'social'], ["thank you","🙌",'social']
   ],
   "Feelings": [
-    ["happy","ðŸ˜„",'descriptor'], ["sad","ðŸ˜¢",'descriptor'], ["angry","ðŸ˜ ",'descriptor'],
-    ["scared","ðŸ˜¨",'descriptor'], ["tired","ðŸ˜´",'descriptor'], ["hurt","ðŸ¤•",'descriptor'],
-    ["excited","ðŸ¤©",'descriptor'], ["calm","ðŸ˜Œ",'descriptor'], ["sick","ðŸ¤’",'descriptor'],
-    ["frustrated","ðŸ˜¤",'descriptor']
+    ["happy","😄",'descriptor'], ["sad","😢",'descriptor'], ["angry","😠",'descriptor'],
+    ["scared","😨",'descriptor'], ["tired","😴",'descriptor'], ["hurt","🤕",'descriptor'],
+    ["excited","🤩",'descriptor'], ["calm","😌",'descriptor'], ["sick","🤒",'descriptor'],
+    ["frustrated","😤",'descriptor']
   ],
   "Food & Drink": [
-    ["eat","ðŸ½ï¸",'verb'], ["drink","ðŸ¥¤",'verb'], ["water","ðŸ’§",'noun'], ["snack","ðŸª",'noun'],
-    ["lunch","ðŸ±",'noun'], ["fruit","ðŸŽ",'noun'], ["milk","ðŸ¥›",'noun'], ["hungry","ðŸ”",'descriptor'],
-    ["thirsty","ðŸ¥¤",'descriptor'], ["finished","ðŸ½ï¸",'negation']
+    ["eat","🍽️",'verb'], ["drink","🥤",'verb'], ["water","💧",'noun'], ["snack","🍪",'noun'],
+    ["lunch","🍱",'noun'], ["fruit","🍎",'noun'], ["milk","🥛",'noun'], ["hungry","🍔",'descriptor'],
+    ["thirsty","🥤",'descriptor'], ["finished","🍽️",'negation']
+  ],
+  "Animals": [
+    ["dog","🐶",'noun'], ["cat","🐱",'noun'], ["bird","🐦",'noun'], ["fish","🐟",'noun'],
+    ["horse","🐴",'noun'], ["cow","🐮",'noun'], ["pig","🐷",'noun'], ["sheep","🐑",'noun'],
+    ["duck","🦆",'noun'], ["chicken","🐔",'noun'], ["rabbit","🐰",'noun'], ["frog","🐸",'noun'],
+    ["butterfly","🦋",'noun'], ["bee","🐝",'noun'], ["kangaroo","🦘",'noun'], ["koala","🐨",'noun'],
+    ["elephant","🐘",'noun'], ["lion","🦁",'noun'], ["monkey","🐵",'noun'], ["turtle","🐢",'noun']
   ],
   "Actions": [
-    ["play","ðŸ§©",'verb'], ["open","ðŸ“‚",'verb'], ["close","ðŸšª",'verb'], ["sit","ðŸª‘",'verb'],
-    ["stand","ðŸ§",'verb'], ["wash","ðŸ§¼",'verb'], ["read","ðŸ“–",'verb'], ["write","âœï¸",'verb'],
-    ["listen","ðŸ‘‚",'verb'], ["wait","â³",'verb']
+    ["play","🧩",'verb'], ["open","📂",'verb'], ["close","🚪",'verb'], ["sit","🪑",'verb'],
+    ["stand","🧍",'verb'], ["wash","🧼",'verb'], ["read","📖",'verb'], ["write","✏️",'verb'],
+    ["listen","👂",'verb'], ["wait","⏳",'verb']
   ],
   "People & Places": [
-    ["mom","ðŸ‘©",'noun'], ["dad","ðŸ‘¨",'noun'], ["teacher","ðŸ§‘â€ðŸ«",'noun'], ["friend","ðŸ§‘â€ðŸ¤â€ðŸ§‘",'noun'],
-    ["home","ðŸ ",'noun'], ["school","ðŸ«",'noun'], ["bathroom","ðŸš»",'noun'], ["playground","ðŸ›",'noun'],
-    ["classroom","ðŸ«",'noun'], ["outside","ðŸŒ³",'preposition']
+    ["mom","👩",'noun'], ["dad","👨",'noun'], ["teacher","🧑‍🏫",'noun'], ["friend","🧑‍🤝‍🧑",'noun'],
+    ["home","🏠",'noun'], ["school","🏫",'noun'], ["bathroom","🚻",'noun'], ["playground","🛝",'noun'],
+    ["classroom","🏫",'noun'], ["outside","🌳",'preposition']
   ],
    
   "Descriptors": [
-    ["big","ðŸ˜",'descriptor'], ["little","ðŸœ",'descriptor'], ["hot","ðŸ”¥",'descriptor'],
-    ["cold","â„ï¸",'descriptor'], ["loud","ðŸ”Š",'descriptor'], ["quiet","ðŸ¤«",'descriptor'],
-    ["fast","âš¡",'descriptor'], ["slow","ðŸ¢",'descriptor'], ["good","ðŸ‘",'descriptor'], ["bad","ðŸ‘Ž",'descriptor']
+    ["big","🐘",'descriptor'], ["little","🐜",'descriptor'], ["hot","🔥",'descriptor'],
+    ["cold","❄️",'descriptor'], ["loud","🔊",'descriptor'], ["quiet","🤫",'descriptor'],
+    ["fast","⚡",'descriptor'], ["slow","🐢",'descriptor'], ["good","👍",'descriptor'], ["bad","👎",'descriptor']
   ],
   "Prepositions": [
-    ["in","ðŸ“¥",'preposition'], ["out","ðŸ“¤",'preposition'], ["on","â¬†ï¸",'preposition'],
-    ["off","â¬‡ï¸",'preposition'], ["here","ðŸ“",'preposition'], ["there","ðŸ‘‰",'preposition'],
-    ["up","ðŸ”¼",'preposition'], ["down","ðŸ”½",'preposition']
+    ["in","📥",'preposition'], ["out","📤",'preposition'], ["on","⬆️",'preposition'],
+    ["off","⬇️",'preposition'], ["here","📍",'preposition'], ["there","👉",'preposition'],
+    ["up","🔼",'preposition'], ["down","🔽",'preposition']
   ],
   "Custom": []
 };
@@ -162,18 +170,153 @@ let sentence = [];
 
 const el = id => document.getElementById(id);
 
-// ---------- Storage: localStorage, per this device only ----------
+// ---------- Storage ----------
+// Every change is written immediately to localStorage AND mirrored to
+// IndexedDB. If the browser/app clears localStorage, data is restored
+// from IndexedDB on the next start.
+const KEY_STUDENTS = 'aac-students-list';
+const KEY_CUSTOM   = 'aac-custom-';
+const KEY_LAST     = 'aac-last-view';
+const IDB_NAME = 'striveccs-db', IDB_STORE = 'kv';
+
+function idbOpen(){
+  return new Promise((resolve, reject)=>{
+    if(!window.indexedDB){ reject(new Error('no idb')); return; }
+    const req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = ()=> req.result.createObjectStore(IDB_STORE);
+    req.onsuccess = ()=> resolve(req.result);
+    req.onerror = ()=> reject(req.error);
+  });
+}
+function idbSet(key, value){
+  return idbOpen().then(db=> new Promise((resolve)=>{
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).put(value, key);
+    tx.oncomplete = ()=> resolve(true);
+    tx.onerror = ()=> resolve(false);
+  })).catch(()=>false);
+}
+function idbGetAll(){
+  return idbOpen().then(db=> new Promise((resolve)=>{
+    const out = {};
+    const tx = db.transaction(IDB_STORE, 'readonly');
+    const req = tx.objectStore(IDB_STORE).openCursor();
+    req.onsuccess = ()=>{
+      const c = req.result;
+      if(c){ out[c.key] = c.value; c.continue(); } else resolve(out);
+    };
+    req.onerror = ()=> resolve(out);
+  })).catch(()=>({}));
+}
+
+function storeSet(key, value){
+  let ok = true;
+  try{ localStorage.setItem(key, value); }
+  catch(e){ ok = false; console.error('localStorage save failed', e); }
+  idbSet(key, value); // mirror (also works if localStorage is full or blocked)
+  return ok;
+}
+function storeGet(key){
+  try{ return localStorage.getItem(key); }catch(e){ return null; }
+}
+
+// Copy anything missing from IndexedDB back into localStorage
+async function restoreFromMirror(){
+  const all = await idbGetAll();
+  Object.keys(all).forEach(k=>{
+    if(storeGet(k) === null){
+      try{ localStorage.setItem(k, all[k]); }catch(e){}
+    }
+  });
+}
+// Make sure the mirror holds everything currently in localStorage
+function mirrorAll(){
+  try{
+    for(let i=0;i<localStorage.length;i++){
+      const k = localStorage.key(i);
+      if(k && k.indexOf('aac-') === 0) idbSet(k, localStorage.getItem(k));
+    }
+  }catch(e){}
+}
+
 function loadStudents(){
-  try{ return JSON.parse(localStorage.getItem('aac-students-list') || '[]'); }catch(e){ return []; }
+  try{ return JSON.parse(storeGet(KEY_STUDENTS) || '[]'); }catch(e){ return []; }
 }
 function saveStudents(list){
-  localStorage.setItem('aac-students-list', JSON.stringify(list));
+  storeSet(KEY_STUDENTS, JSON.stringify(list));
 }
 function loadCustomWords(studentId){
-  try{ return JSON.parse(localStorage.getItem('aac-custom-'+studentId) || '{}'); }catch(e){ return {}; }
+  try{ return JSON.parse(storeGet(KEY_CUSTOM+studentId) || '{}'); }catch(e){ return {}; }
 }
 function saveCustomWords(studentId, data){
-  localStorage.setItem('aac-custom-'+studentId, JSON.stringify(data));
+  if(!studentId) return false;
+  const ok = storeSet(KEY_CUSTOM+studentId, JSON.stringify(data));
+  if(!ok) console.warn('Saved to backup storage only');
+  return ok;
+}
+function saveLastView(){
+  storeSet(KEY_LAST, JSON.stringify({student: currentStudent, tab: currentTab}));
+}
+function loadLastView(){
+  try{ return JSON.parse(storeGet(KEY_LAST) || '{}'); }catch(e){ return {}; }
+}
+
+// Save again whenever the app is hidden, closed or switched away from
+function flushAll(){
+  if(currentStudent) saveCustomWords(currentStudent, customWords);
+  saveLastView();
+  mirrorAll();
+}
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState === 'hidden') flushAll(); });
+window.addEventListener('pagehide', flushAll);
+window.addEventListener('beforeunload', flushAll);
+
+// ---------- Backup / restore ----------
+function openBackupModal(){
+  const box = el('modalBox');
+  box.innerHTML = `
+    <h3>Backup</h3>
+    <p style="font-size:13px;color:#555;">Download a file with all students and added words, or restore from one (for example on a new tablet).</p>
+    <div class="modalBtns" style="flex-direction:column;">
+      <button class="btnPrimary" id="exportBtn">⬇ Download backup</button>
+      <button class="btnPrimary" id="importBtn">⬆ Restore from file</button>
+      <button class="btnSecondary" id="closeBackup">Close</button>
+    </div>
+    <input type="file" id="importFile" accept=".json,application/json" style="display:none">
+  `;
+  el('modalOverlay').classList.add('show');
+  el('closeBackup').onclick = closeModal;
+  el('exportBtn').onclick = ()=>{
+    flushAll();
+    const data = {};
+    try{
+      for(let i=0;i<localStorage.length;i++){
+        const k = localStorage.key(i);
+        if(k && k.indexOf('aac-') === 0) data[k] = localStorage.getItem(k);
+      }
+    }catch(e){}
+    const blob = new Blob([JSON.stringify(data)], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'striveccs-backup-' + new Date().toISOString().slice(0,10) + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+  };
+  el('importBtn').onclick = ()=> el('importFile').click();
+  el('importFile').onchange = (e)=>{
+    const f = e.target.files[0];
+    if(!f) return;
+    const r = new FileReader();
+    r.onload = ()=>{
+      try{
+        const data = JSON.parse(r.result);
+        Object.keys(data).forEach(k=>{ if(k.indexOf('aac-') === 0) storeSet(k, data[k]); });
+        closeModal();
+        populateStudentSelect(loadLastView().student);
+        alert('Backup restored.');
+      }catch(err){ alert('That file could not be read.'); }
+    };
+    r.readAsText(f);
+  };
 }
 
 function speak(text){
@@ -192,7 +335,7 @@ function renderTabs(){
     const b = document.createElement('button');
     b.textContent = tab;
     if(tab===currentTab) b.classList.add('active');
-    b.onclick = ()=>{ currentTab = tab; renderTabs(); renderGrid(); };
+    b.onclick = ()=>{ currentTab = tab; saveLastView(); renderTabs(); renderGrid(); };
     tabsEl.appendChild(b);
   });
 }
@@ -229,7 +372,7 @@ function renderGrid(){
     addTile.className = 'tile';
     addTile.style.background = '#fff';
     addTile.style.border = '2px dashed #999';
-    addTile.innerHTML = `<div class="emoji">âž•</div><div class="label">Add word</div>`;
+    addTile.innerHTML = `<div class="emoji">➕</div><div class="label">Add word</div>`;
     addTile.onclick = openAddWordModal;
     grid.appendChild(addTile);
   }
@@ -260,7 +403,7 @@ function openAddWordModal(){
     <label>Word / phrase</label>
     <input id="newWordLabel" type="text" placeholder="e.g. iPad">
     <label>Emoji or short icon text</label>
-    <input id="newWordEmoji" type="text" placeholder="e.g. ðŸ“±" maxlength="4">
+    <input id="newWordEmoji" type="text" placeholder="e.g. 📱" maxlength="4">
     <label>Word type (for color coding)</label>
     <select id="newWordPos">
       <option value="noun">Noun (orange)</option>
@@ -280,7 +423,7 @@ function openAddWordModal(){
   el('cancelAdd').onclick = closeModal;
   el('confirmAdd').onclick = ()=>{
     const label = el('newWordLabel').value.trim();
-    const emoji = el('newWordEmoji').value.trim() || 'ðŸ’¬';
+    const emoji = el('newWordEmoji').value.trim() || '💬';
     const pos = el('newWordPos').value;
     if(!label) return;
     if(!customWords[currentTab]) customWords[currentTab] = [];
@@ -298,7 +441,7 @@ function openNewStudentModal(){
     <label>Student name</label>
     <input id="newStudentName" type="text" placeholder="e.g. Alex">
     <p style="font-size:12px;color:#666;margin-top:10px;">
-      This board is saved on this device only. To use the same custom words on another tablet, add them there separately, or use Export/Import (see the âš™ menu in the future if added).
+      This board is saved on this device only. To use the same custom words on another tablet, add them there separately, or use Export/Import (see the ⚙ menu in the future if added).
     </p>
     <div class="modalBtns">
       <button class="btnSecondary" id="cancelStudent">Cancel</button>
@@ -319,19 +462,16 @@ function openNewStudentModal(){
     populateStudentSelect(name);
   };
 }
-if(loadStudents().length === 0){
-  saveStudents(['Default']);
-}
 function populateStudentSelect(selectId){
   const students = loadStudents();
   const sel = el('studentSelect');
   sel.innerHTML = '';
   if(students.length===0){
     const opt = document.createElement('option');
-    opt.textContent = 'No students yet â€” tap + Student';
+    opt.textContent = 'No students yet — tap + Student';
     opt.value = '';
     sel.appendChild(opt);
-    el('studentLabel').textContent = 'Student: â€”';
+    el('studentLabel').textContent = 'Student: —';
     currentStudent = null;
     customWords = {};
     renderGrid();
@@ -351,16 +491,20 @@ function switchStudent(name){
   currentStudent = name;
   el('studentLabel').textContent = 'Student: ' + name;
   customWords = loadCustomWords(name);
+  saveLastView();
   sentence = [];
   renderSentence();
   renderGrid();
 }
 
 function init(){
+  const last = loadLastView();
+  if(last.tab && CORE_TABS[last.tab]) currentTab = last.tab;
   renderTabs();
   renderGrid();
   renderSentence();
-  populateStudentSelect();
+  populateStudentSelect(last.student);
+  el('backupBtn').onclick = openBackupModal;
 
   el('studentSelect').onchange = e => switchStudent(e.target.value);
   el('newStudentBtn').onclick = openNewStudentModal;
@@ -382,24 +526,18 @@ function init(){
   el('modalOverlay').onclick = (e)=>{ if(e.target.id==='modalOverlay') closeModal(); };
 
   if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+    navigator.serviceWorker.register('service-worker.js').then(r=>r.update()).catch(()=>{});
   }
 }
-function saveCustomWords(studentId, data){
-  try{
-    localStorage.setItem('aac-custom-'+studentId, JSON.stringify(data));
-    return true;
-  }catch(e){
-    alert('Could not save. Storage may be full or blocked (private mode?).');
-    return false;
-  }
-}
-
 // Ask the browser not to evict saved data
 if(navigator.storage && navigator.storage.persist){
   navigator.storage.persist().catch(()=>{});
 }
-init();
+restoreFromMirror().then(()=>{
+  if(loadStudents().length === 0) saveStudents(['Default']);
+  init();
+  mirrorAll();
+});
 })();
 </script>
 </body>
