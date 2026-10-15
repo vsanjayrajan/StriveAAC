@@ -318,7 +318,9 @@ function openNewStudentModal(){
     populateStudentSelect(name);
   };
 }
-
+if(loadStudents().length === 0){
+  saveStudents(['Default']);
+}
 function populateStudentSelect(selectId){
   const students = loadStudents();
   const sel = el('studentSelect');
@@ -382,7 +384,20 @@ function init(){
     navigator.serviceWorker.register('service-worker.js').catch(()=>{});
   }
 }
+function saveCustomWords(studentId, data){
+  try{
+    localStorage.setItem('aac-custom-'+studentId, JSON.stringify(data));
+    return true;
+  }catch(e){
+    alert('Could not save. Storage may be full or blocked (private mode?).');
+    return false;
+  }
+}
 
+// Ask the browser not to evict saved data
+if(navigator.storage && navigator.storage.persist){
+  navigator.storage.persist().catch(()=>{});
+}
 init();
 })();
 </script>
