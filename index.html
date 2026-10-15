@@ -58,7 +58,7 @@
 
   #modalOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;z-index:50;}
   #modalOverlay.show{display:flex;}
-  #modalBox{background:#fff;border-radius:14px;padding:20px;width:min(90vw,380px);max-height:85vh;overflow-y:auto;}
+  #modalBox{background:#fff;border-radius:14px;padding:20px;width:min(92vw,460px);max-height:90vh;overflow-y:auto;}
   #modalBox h3{margin-top:0;}
   #modalBox label{display:block;margin:10px 0 4px;font-size:14px;font-weight:600;}
   #modalBox input, #modalBox select{width:100%;padding:9px;font-size:16px;border-radius:8px;border:1px solid #ccc;}
@@ -396,6 +396,63 @@ function renderSentence(){
 
 function closeModal(){ el('modalOverlay').classList.remove('show'); }
 
+
+// ---------- Full emoji set (generated in the browser from Unicode ranges) ----------
+let _emojiSets = null;
+const FLAG_CODES = 'AC AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET EU FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GT GU GW GY HK HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG UM UN US UY UZ VA VC VE VG VI VN VU WF WS XK YE YT ZA ZM ZW'.split(' ');
+function getEmojiSets(){
+  if(_emojiSets) return _emojiSets;
+  let isEmoji = ()=>true, isBase = ()=>false;
+  try{
+    const re1 = new RegExp('\\p{Emoji_Presentation}', 'u');
+    const re2 = new RegExp('\\p{Emoji_Modifier_Base}', 'u');
+    isEmoji = ch => re1.test(ch);
+    const NO_TONE = [0x1F46A,0x1F46B,0x1F46C,0x1F46D,0x1F46F,0x1F91D,0x1F93C];
+    isBase = ch => re2.test(ch) && NO_TONE.indexOf(ch.codePointAt(0)) === -1;
+  }catch(e){}
+  const seen = new Set();
+  function build(ranges, extras){
+    const out = [];
+    ranges.forEach(r=>{
+      for(let c=r[0]; c<=r[1]; c++){
+        const ch = String.fromCodePoint(c);
+        if(!seen.has(c) && isEmoji(ch)){ seen.add(c); out.push({e:ch, base:isBase(ch)}); }
+      }
+    });
+    (extras||[]).forEach(c=>{
+      const ch = String.fromCodePoint(c);
+      if(!seen.has(c)){ seen.add(c); out.push({e:ch+'\uFE0F', base:isBase(ch)}); }
+    });
+    return out;
+  }
+  const sets = {};
+  sets.smileys = build([[0x1F600,0x1F644],[0x1F910,0x1F915],[0x1F917,0x1F925],[0x1F927,0x1F92F],[0x1F970,0x1F976],[0x1F978,0x1F978],[0x1F97A,0x1F97A],[0x1F9D0,0x1F9D0]], [0x263A,0x2639]);
+  sets.people  = build([[0x1F645,0x1F647],[0x1F64B,0x1F64F],[0x1F466,0x1F487],[0x1F440,0x1F450],[0x1F90C,0x1F90C],[0x1F90F,0x1F90F],[0x1F918,0x1F91F],[0x1F926,0x1F926],[0x1F930,0x1F939],[0x1F9B4,0x1F9B9],[0x1F9CD,0x1F9CF],[0x1F9D1,0x1F9DF],[0x1F9E0,0x1F9E0],[0x1F4AA,0x1F4AA],[0x270A,0x270B],[0x1F6B6,0x1F6B6],[0x1F6C0,0x1F6C0],[0x1F6CC,0x1F6CC]], [0x261D,0x270C,0x270D]);
+  sets.food    = build([[0x1F345,0x1F37C],[0x1F37E,0x1F37F],[0x1F32D,0x1F32F],[0x1F950,0x1F96F],[0x1F9C0,0x1F9CB],[0x2615,0x2615]], [0x1F37D]);
+  sets.nature  = build([[0x1F400,0x1F43E],[0x1F648,0x1F64A],[0x1F980,0x1F9A2],[0x1F9A5,0x1F9AB],[0x1F9AD,0x1F9AE],[0x1F330,0x1F344],[0x1F490,0x1F490],[0x1F4AE,0x1F4AE],[0x1F300,0x1F320],[0x26C4,0x26C5],[0x26A1,0x26A1],[0x1F4A7,0x1F4A7],[0x1F525,0x1F525]], [0x2600,0x2601,0x2602,0x2603,0x2744,0x1F43F]);
+  sets.activities = build([[0x1F380,0x1F393],[0x1F3A0,0x1F3CA],[0x1F3CF,0x1F3D3],[0x1F3F8,0x1F3F9],[0x1F93A,0x1F93E],[0x1F945,0x1F94F],[0x1F9E9,0x1F9E9],[0x1F9F8,0x1F9F8],[0x26BD,0x26BE],[0x26F3,0x26F3]], [0x265F]);
+  sets.travel  = build([[0x1F680,0x1F6C5],[0x1F6D0,0x1F6D2],[0x1F6D5,0x1F6D7],[0x1F6F4,0x1F6FC],[0x1F3E0,0x1F3F0],[0x1F5FB,0x1F5FF],[0x26EA,0x26EA],[0x26F2,0x26F2],[0x26F5,0x26F5],[0x26FA,0x26FA],[0x26FD,0x26FD],[0x2693,0x2693],[0x1F9ED,0x1F9ED]], [0x2708]);
+  sets.objects = build([[0x1F451,0x1F465],[0x1F488,0x1F48E],[0x1F4A1,0x1F4A1],[0x1F4B0,0x1F4FC],[0x1F50A,0x1F52E],[0x1F9E2,0x1F9E8],[0x1F9EA,0x1F9F7],[0x1F9F9,0x1F9FF],[0x231A,0x231B],[0x23F0,0x23F3]], [0x260E,0x2709,0x270F,0x2702,0x2699,0x2696]);
+  sets.symbols = build([[0x1F493,0x1F49F],[0x1F4A2,0x1F4A6],[0x1F4A8,0x1F4AD],[0x1F4AF,0x1F4AF],[0x1F500,0x1F53D],[0x1F7E0,0x1F7EB],[0x1F90D,0x1F90E],[0x1F9E1,0x1F9E1],[0x1F5A4,0x1F5A4],[0x2B50,0x2B50],[0x2705,0x2705],[0x274C,0x274E],[0x2753,0x2755],[0x2757,0x2757],[0x2795,0x2797],[0x27B0,0x27B0],[0x27BF,0x27BF],[0x23E9,0x23EC],[0x267F,0x267F],[0x2B1B,0x2B1C],[0x25FD,0x25FE],[0x1F6AB,0x1F6AB]], [0x2764,0x2714,0x2716,0x2660,0x2663,0x2665,0x2666,0x26A0,0x2B06,0x2B07,0x27A1,0x2B05,0x2195,0x2194]);
+  sets.flags = FLAG_CODES.map(c=>({e: String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65), base:false}));
+  sets.flags.unshift({e:'\u{1F3C1}', base:false}, {e:'\u{1F6A9}', base:false}, {e:'\u{1F3F4}', base:false});
+  _emojiSets = sets;
+  return sets;
+}
+const EMOJI_CATS = [
+  ['recent','\u{1F552}','Recent'], ['smileys','\u{1F600}','Smileys'], ['people','\u{1F44B}','People'],
+  ['nature','\u{1F436}','Animals & nature'], ['food','\u{1F34E}','Food & drink'], ['activities','\u26BD','Activities'],
+  ['travel','\u{1F697}','Travel & places'], ['objects','\u{1F4A1}','Objects'], ['symbols','\u2764\uFE0F','Symbols'], ['flags','\u{1F3C1}','Flags']
+];
+const SKIN_TONES = ['', '\u{1F3FB}', '\u{1F3FC}', '\u{1F3FD}', '\u{1F3FE}', '\u{1F3FF}'];
+let emojiTone = 0;
+function loadRecentEmoji(){ try{ return JSON.parse(storeGet('aac-recent-emoji') || '[]'); }catch(e){ return []; } }
+function pushRecentEmoji(e){
+  const list = loadRecentEmoji().filter(x=>x!==e);
+  list.unshift(e);
+  storeSet('aac-recent-emoji', JSON.stringify(list.slice(0,32)));
+}
+
 function openAddWordModal(){
   const box = el('modalBox');
   box.innerHTML = `
@@ -404,7 +461,9 @@ function openAddWordModal(){
     <input id="newWordLabel" type="text" placeholder="e.g. iPad">
     <label>Emoji or short icon text</label>
     <input id="newWordEmoji" type="text" placeholder="Tap an icon below or type one" maxlength="16">
-    <div id="emojiPicker" style="display:flex;flex-wrap:wrap;gap:2px;max-height:130px;overflow-y:auto;margin:6px 0;border:1px solid #ddd;border-radius:8px;padding:4px;"></div>
+    <div id="emojiCats" style="display:flex;gap:4px;margin:8px 0 4px;overflow-x:auto;padding-bottom:4px;"></div>
+    <div id="emojiTones" style="display:flex;align-items:center;gap:4px;margin:2px 0 4px;font-size:12px;color:#555;"></div>
+    <div id="emojiPicker" style="display:flex;flex-wrap:wrap;gap:4px;height:230px;overflow-y:auto;margin:4px 0;border:1px solid #ddd;border-radius:8px;padding:6px;align-content:flex-start;"></div>
     <label>Word type (for color coding)</label>
     <select id="newWordPos">
       <option value="noun">Noun (orange)</option>
@@ -421,16 +480,60 @@ function openAddWordModal(){
     </div>
   `;
   el('modalOverlay').classList.add('show');
-  const EMOJI_CHOICES = ['\u{1F600}','\u{1F604}','\u{1F60A}','\u{1F622}','\u{1F620}','\u{1F634}','\u{1F628}','\u{1F912}','\u{1F915}','\u{1F60D}','\u{1F929}','\u{1F60C}','\u{1F34E}','\u{1F34C}','\u{1F347}','\u{1F353}','\u{1F34A}','\u{1F349}','\u{1F955}','\u{1F33D}','\u{1F35E}','\u{1F9C0}','\u{1F95A}','\u{1F355}','\u{1F354}','\u{1F35F}','\u{1F35D}','\u{1F35A}','\u{1F36A}','\u{1F370}','\u{1F366}','\u{1F95B}','\u{1F9C3}','\u{1F964}','\u{1F4A7}','\u{2615}','\u{1F436}','\u{1F431}','\u{1F42D}','\u{1F430}','\u{1F43B}','\u{1F43C}','\u{1F981}','\u{1F42E}','\u{1F437}','\u{1F438}','\u{1F435}','\u{1F414}','\u{1F427}','\u{1F426}','\u{1F986}','\u{1F41F}','\u{1F422}','\u{1F41D}','\u{1F98B}','\u{1F418}','\u{1F992}','\u{1F998}','\u{1F428}','\u{1F411}','\u{1F434}','\u{1F697}','\u{1F68C}','\u{1F6B2}','\u{2708}\u{FE0F}','\u{1F682}','\u{1F680}','\u{1F3E0}','\u{1F3EB}','\u{1F3E5}','\u{1F6D2}','\u{1F333}','\u{1F31E}','\u{1F319}','\u{2B50}','\u{1F308}','\u{2614}','\u{2744}\u{FE0F}','\u{1F525}','\u{26BD}','\u{1F3C0}','\u{1F3BE}','\u{1F3A8}','\u{1F3B5}','\u{1F3A4}','\u{1F3AE}','\u{1F4F1}','\u{1F4BB}','\u{1F4FA}','\u{1F4DA}','\u{270F}\u{FE0F}','\u{2702}\u{FE0F}','\u{1F9E9}','\u{1F9F8}','\u{1F388}','\u{1F381}','\u{1F382}','\u{1F466}','\u{1F467}','\u{1F468}','\u{1F469}','\u{1F474}','\u{1F475}','\u{1F476}','\u{1F44B}','\u{1F44D}','\u{1F44F}','\u{1F64F}','\u{2764}\u{FE0F}','\u{1F91D}','\u{270B}','\u{1F440}','\u{1F442}','\u{1F443}','\u{1F444}','\u{1F9B7}','\u{1F9B6}','\u{1F590}\u{FE0F}','\u{1F6C1}','\u{1F6BF}','\u{1F6BD}','\u{1F9FC}','\u{1FAA5}','\u{1F6CF}\u{FE0F}','\u{1FA91}','\u{1F6AA}','\u{1F511}','\u{23F0}','\u{1F392}','\u{1F455}','\u{1F456}','\u{1F45F}','\u{1F9E6}','\u{1F9E2}','\u{1F9E4}','\u{1F9E5}'];
   const picker = el('emojiPicker');
-  EMOJI_CHOICES.forEach(em=>{
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.textContent = em;
-    b.style.cssText = 'font-size:24px;width:40px;height:40px;border:none;background:#f2f2f2;border-radius:8px;cursor:pointer;';
-    b.onclick = ()=>{ el('newWordEmoji').value = em; };
-    picker.appendChild(b);
+  const catBar = el('emojiCats');
+  const toneBar = el('emojiTones');
+  let activeCat = loadRecentEmoji().length ? 'recent' : 'smileys';
+
+  function emojiList(cat){
+    if(cat === 'recent') return loadRecentEmoji().map(e=>({e:e, base:false, raw:true}));
+    return getEmojiSets()[cat] || [];
+  }
+  function showCat(cat){
+    activeCat = cat;
+    Array.from(catBar.children).forEach(c=>{
+      const on = c.dataset.c === cat;
+      c.style.background = on ? '#2E3B55' : '#e8e8e8';
+    });
+    picker.innerHTML = '';
+    picker.scrollTop = 0;
+    const frag = document.createDocumentFragment();
+    emojiList(cat).forEach(item=>{
+      const em = (item.base && emojiTone > 0) ? item.e + SKIN_TONES[emojiTone] : item.e;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = em;
+      btn.style.cssText = 'font-size:28px;width:46px;height:46px;border:none;background:#f2f2f2;border-radius:8px;cursor:pointer;';
+      btn.onclick = ()=>{ el('newWordEmoji').value = em; pushRecentEmoji(em); };
+      frag.appendChild(btn);
+    });
+    picker.appendChild(frag);
+    if(!picker.children.length){
+      picker.innerHTML = '<span style="color:#888;font-size:14px;padding:6px;">Nothing here yet. Icons you choose will show up here.</span>';
+    }
+  }
+  EMOJI_CATS.forEach(cat=>{
+    const c = document.createElement('button');
+    c.type = 'button'; c.textContent = cat[1]; c.title = cat[2]; c.dataset.c = cat[0];
+    c.style.cssText = 'flex:0 0 auto;width:40px;height:40px;border:none;border-radius:10px;font-size:22px;cursor:pointer;';
+    c.onclick = ()=> showCat(cat[0]);
+    catBar.appendChild(c);
   });
+  const toneLabel = document.createElement('span'); toneLabel.textContent = 'Skin tone:';
+  toneBar.appendChild(toneLabel);
+  SKIN_TONES.forEach((t,i)=>{
+    const tb = document.createElement('button');
+    tb.type = 'button';
+    tb.textContent = i === 0 ? '\u{1F44B}' : '\u{1F44B}' + t;
+    tb.style.cssText = 'width:34px;height:34px;border:none;border-radius:8px;font-size:18px;cursor:pointer;background:' + (i===emojiTone ? '#F4B400' : '#e8e8e8') + ';';
+    tb.onclick = ()=>{
+      emojiTone = i;
+      Array.from(toneBar.querySelectorAll('button')).forEach((x,k)=>{ x.style.background = k===i ? '#F4B400' : '#e8e8e8'; });
+      showCat(activeCat);
+    };
+    toneBar.appendChild(tb);
+  });
+  showCat(activeCat);
   el('cancelAdd').onclick = closeModal;
   el('confirmAdd').onclick = ()=>{
     const label = el('newWordLabel').value.trim();
