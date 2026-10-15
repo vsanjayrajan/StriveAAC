@@ -1,3 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>StriveCCS</title>
+<meta name="theme-color" content="#2E3B55">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="StriveCCS">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="icons/icon-192.png">
+<style>
+  :root{
+    --pronoun:#FFF176; --verb:#81C784; --descriptor:#64B5F6; --noun:#FFB74D;
+    --preposition:#BA68C8; --social:#F48FB1; --negation:#E57373; --misc:#E0E0E0;
+    --bg:#F5F6FA; --ink:#222;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;background:var(--bg);font-family:'Segoe UI',Arial,sans-serif;color:var(--ink);
+    -webkit-tap-highlight-color: transparent; overscroll-behavior:none;}
+  #app{display:flex;flex-direction:column;height:100vh;}
+
+  #topbar{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#2E3B55;color:#fff;flex-wrap:wrap;}
+  #topbar select, #topbar button{font-size:16px;padding:8px 10px;border-radius:8px;border:none;cursor:pointer;}
+  #topbar select{background:#fff;color:#222;}
+  #topbar button{background:#4C5F82;color:#fff;}
+  #topbar button.active{background:#F4B400;color:#222;}
+  #topbar .spacer{flex:1;}
+  #studentLabel{font-weight:600;font-size:15px;white-space:nowrap;}
+
+  #sentenceBar{display:flex;align-items:center;gap:8px;padding:10px;background:#fff;border-bottom:2px solid #ddd;min-height:64px;}
+  #sentenceStrip{flex:1;display:flex;gap:6px;overflow-x:auto;padding:4px;min-height:48px;align-items:center;}
+  #sentenceStrip .word{background:#eee;border-radius:8px;padding:8px 12px;font-size:20px;font-weight:600;white-space:nowrap;cursor:pointer;border:2px solid rgba(0,0,0,0.1);}
+  #sentenceStrip .placeholder{color:#999;font-size:16px;font-style:italic;}
+  #sentenceBar button{font-size:15px;padding:10px 14px;border-radius:8px;border:none;cursor:pointer;font-weight:700;white-space:nowrap;}
+  #speakBtn{background:#2E7D32;color:#fff;}
+  #clearBtn{background:#C62828;color:#fff;}
+  #backspaceBtn{background:#616161;color:#fff;}
+
+  #tabs{display:flex;gap:6px;padding:8px 10px;background:#fff;overflow-x:auto;border-bottom:1px solid #ddd;}
+  #tabs button{flex-shrink:0;padding:9px 16px;border-radius:20px;border:2px solid #ccc;background:#fafafa;font-size:15px;font-weight:600;cursor:pointer;color:#333;}
+  #tabs button.active{background:#2E3B55;color:#fff;border-color:#2E3B55;}
+
+  #gridWrap{flex:1;overflow-y:auto;padding:10px;}
+  #grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;}
+  .tile{border-radius:14px;padding:10px 6px;min-height:88px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;border:2px solid rgba(0,0,0,0.15);box-shadow:0 2px 3px rgba(0,0,0,0.08);user-select:none;position:relative;}
+  .tile:active{transform:scale(0.95);}
+  .tile .emoji{font-size:32px;line-height:1;}
+  .tile .label{font-size:15px;font-weight:700;margin-top:4px;text-align:center;color:#222;}
+  .tile.removeMode::after{content:"\2715 ";position:absolute;top:2px;right:6px;color:#C62828;font-weight:900;font-size:16px;}
+
+  #legend{display:flex;flex-wrap:wrap;gap:8px;padding:6px 10px;font-size:12px;background:#fff;border-top:1px solid #eee;}
+  #legend span{display:flex;align-items:center;gap:4px;}
+  #legend i{width:14px;height:14px;border-radius:3px;display:inline-block;border:1px solid rgba(0,0,0,0.2);}
+
+  #modalOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;z-index:50;}
+  #modalOverlay.show{display:flex;}
+  #modalBox{background:#fff;border-radius:14px;padding:20px;width:min(90vw,380px);max-height:85vh;overflow-y:auto;}
+  #modalBox h3{margin-top:0;}
+  #modalBox label{display:block;margin:10px 0 4px;font-size:14px;font-weight:600;}
+  #modalBox input, #modalBox select{width:100%;padding:9px;font-size:16px;border-radius:8px;border:1px solid #ccc;}
+  #modalBox .modalBtns{display:flex;gap:8px;margin-top:16px;}
+  #modalBox .modalBtns button{flex:1;padding:10px;border-radius:8px;border:none;font-weight:700;cursor:pointer;font-size:15px;}
+  .btnPrimary{background:#2E7D32;color:#fff;}
+  .btnSecondary{background:#eee;color:#333;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="topbar">
+    <span id="appTitle" style="font-weight:800;font-size:17px;letter-spacing:0.5px;">StriveCCS</span>
+    <span id="studentLabel">Student: &#x2014;</span>
+    <select id="studentSelect"></select>
+    <button id="newStudentBtn">+ Student</button>
+    <div class="spacer"></div>
+    <button id="editModeBtn">&#x270E; Edit board</button>
+    <button id="removeModeBtn">&#x1F5D1; Remove</button>
+    <button id="backupBtn">&#x1F4BE; Backup</button>
+  </div>
+
+  <div id="sentenceBar">
+    <div id="sentenceStrip"><span class="placeholder">Tap words to build a sentence...</span></div>
+    <button id="backspaceBtn">&#x232B;</button>
+    <button id="clearBtn">Clear</button>
+    <button id="speakBtn">&#x25B6; Speak</button>
+  </div>
+
+  <div id="tabs"></div>
+  <div id="gridWrap"><div id="grid"></div></div>
+
+  <div id="legend">
+    <span><i style="background:var(--social)"></i>Social</span>
+    <span><i style="background:var(--pronoun)"></i>Pronouns</span>
+    <span><i style="background:var(--verb)"></i>Verbs</span>
+    <span><i style="background:var(--descriptor)"></i>Descriptors</span>
+    <span><i style="background:var(--noun)"></i>Nouns</span>
+    <span><i style="background:var(--preposition)"></i>Prepositions</span>
+    <span><i style="background:var(--negation)"></i>Negation</span>
+  </div>
+</div>
+
+<div id="modalOverlay"><div id="modalBox"></div></div>
+
+<script>
+(function(){
+
+const CORE_TABS = {
+  "Core": [
+    ["I","\u{1F9D1}",'pronoun'], ["you","\u{1FAF5}",'pronoun'], ["want","\u{1F64B}",'verb'], ["like","\u{1F44D}",'verb'],
+    ["more","\u{2795}",'verb'], ["go","\u{1F6B6}",'verb'], ["stop","\u{270B}",'negation'], ["all done","\u{2705}",'negation'],
+    ["help","\u{1F198}",'verb'], ["look","\u{1F440}",'verb'], ["give","\u{1F932}",'verb'], ["come","\u{1F44B}",'verb'],
+    ["yes","\u{2714}\u{FE0F}",'social'], ["no","\u{274C}",'negation'], ["please","\u{1F64F}",'social'], ["thank you","\u{1F64C}",'social']
+  ],
+  "Feelings": [
+    ["happy","\u{1F604}",'descriptor'], ["sad","\u{1F622}",'descriptor'], ["angry","\u{1F620}",'descriptor'],
+    ["scared","\u{1F628}",'descriptor'], ["tired","\u{1F634}",'descriptor'], ["hurt","\u{1F915}",'descriptor'],
+    ["excited","\u{1F929}",'descriptor'], ["calm","\u{1F60C}",'descriptor'], ["sick","\u{1F912}",'descriptor'],
+    ["frustrated","\u{1F624}",'descriptor']
+  ],
+  "Food & Drink": [
+    ["eat","\u{1F37D}\u{FE0F}",'verb'], ["drink","\u{1F964}",'verb'], ["water","\u{1F4A7}",'noun'], ["snack","\u{1F36A}",'noun'],
+    ["lunch","\u{1F371}",'noun'], ["fruit","\u{1F34E}",'noun'], ["milk","\u{1F95B}",'noun'], ["hungry","\u{1F354}",'descriptor'],
+    ["thirsty","\u{1F964}",'descriptor'], ["finished","\u{1F37D}\u{FE0F}",'negation']
+  ],
+  "Animals": [
+    ["dog","\u{1F436}",'noun'], ["cat","\u{1F431}",'noun'], ["bird","\u{1F426}",'noun'], ["fish","\u{1F41F}",'noun'],
+    ["horse","\u{1F434}",'noun'], ["cow","\u{1F42E}",'noun'], ["pig","\u{1F437}",'noun'], ["sheep","\u{1F411}",'noun'],
+    ["duck","\u{1F986}",'noun'], ["chicken","\u{1F414}",'noun'], ["rabbit","\u{1F430}",'noun'], ["frog","\u{1F438}",'noun'],
+    ["butterfly","\u{1F98B}",'noun'], ["bee","\u{1F41D}",'noun'], ["kangaroo","\u{1F998}",'noun'], ["koala","\u{1F428}",'noun'],
+    ["elephant","\u{1F418}",'noun'], ["lion","\u{1F981}",'noun'], ["monkey","\u{1F435}",'noun'], ["turtle","\u{1F422}",'noun']
+  ],
+  "Actions": [
+    ["play","\u{1F9E9}",'verb'], ["open","\u{1F4C2}",'verb'], ["close","\u{1F6AA}",'verb'], ["sit","\u{1FA91}",'verb'],
+    ["stand","\u{1F9CD}",'verb'], ["wash","\u{1F9FC}",'verb'], ["read","\u{1F4D6}",'verb'], ["write","\u{270F}\u{FE0F}",'verb'],
+    ["listen","\u{1F442}",'verb'], ["wait","\u{23F3}",'verb']
+  ],
+  "People & Places": [
+    ["mom","\u{1F469}",'noun'], ["dad","\u{1F468}",'noun'], ["teacher","\u{1F9D1}\u{200D}\u{1F3EB}",'noun'], ["friend","\u{1F9D1}\u{200D}\u{1F91D}\u{200D}\u{1F9D1}",'noun'],
+    ["home","\u{1F3E0}",'noun'], ["school","\u{1F3EB}",'noun'], ["bathroom","\u{1F6BB}",'noun'], ["playground","\u{1F6DD}",'noun'],
+    ["classroom","\u{1F3EB}",'noun'], ["outside","\u{1F333}",'preposition']
+  ],
+   
+  "Descriptors": [
+    ["big","\u{1F418}",'descriptor'], ["little","\u{1F41C}",'descriptor'], ["hot","\u{1F525}",'descriptor'],
+    ["cold","\u{2744}\u{FE0F}",'descriptor'], ["loud","\u{1F50A}",'descriptor'], ["quiet","\u{1F92B}",'descriptor'],
+    ["fast","\u{26A1}",'descriptor'], ["slow","\u{1F422}",'descriptor'], ["good","\u{1F44D}",'descriptor'], ["bad","\u{1F44E}",'descriptor']
+  ],
+  "Prepositions": [
+    ["in","\u{1F4E5}",'preposition'], ["out","\u{1F4E4}",'preposition'], ["on","\u{2B06}\u{FE0F}",'preposition'],
+    ["off","\u{2B07}\u{FE0F}",'preposition'], ["here","\u{1F4CD}",'preposition'], ["there","\u{1F449}",'preposition'],
+    ["up","\u{1F53C}",'preposition'], ["down","\u{1F53D}",'preposition']
+  ],
+  "Custom": []
+};
+const POS_COLOR = {
+  pronoun:'var(--pronoun)', verb:'var(--verb)', descriptor:'var(--descriptor)',
+  noun:'var(--noun)', preposition:'var(--preposition)', social:'var(--social)', negation:'var(--negation)'
+};
+
+let currentStudent = null;
+let currentTab = "Core";
+let customWords = {};
+let editMode = false;
+let removeMode = false;
+let sentence = [];
+
+const el = id => document.getElementById(id);
+
+// ---------- Storage ----------
+// Every change is written immediately to localStorage AND mirrored to
+// IndexedDB. If the browser/app clears localStorage, data is restored
+// from IndexedDB on the next start.
+const KEY_STUDENTS = 'aac-students-list';
+const KEY_CUSTOM   = 'aac-custom-';
+const KEY_LAST     = 'aac-last-view';
+const IDB_NAME = 'striveccs-db', IDB_STORE = 'kv';
+
+function idbOpen(){
+  return new Promise((resolve, reject)=>{
+    if(!window.indexedDB){ reject(new Error('no idb')); return; }
+    const req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = ()=> req.result.createObjectStore(IDB_STORE);
+    req.onsuccess = ()=> resolve(req.result);
+    req.onerror = ()=> reject(req.error);
+  });
+}
+function idbSet(key, value){
+  return idbOpen().then(db=> new Promise((resolve)=>{
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).put(value, key);
+    tx.oncomplete = ()=> resolve(true);
     tx.onerror = ()=> resolve(false);
   })).catch(()=>false);
 }
